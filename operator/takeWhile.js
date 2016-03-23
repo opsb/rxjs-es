@@ -1,0 +1,47 @@
+import { Subscriber } from '../Subscriber';
+/**
+ * @param predicate
+ * @return {Observable<R>|WebSocketSubject<T>|Observable<T>}
+ * @method takeWhile
+ * @owner Observable
+ */
+export function takeWhile(predicate) {
+    return this.lift(new TakeWhileOperator(predicate));
+}
+class TakeWhileOperator {
+    constructor(predicate) {
+        this.predicate = predicate;
+    }
+    call(subscriber) {
+        return new TakeWhileSubscriber(subscriber, this.predicate);
+    }
+}
+class TakeWhileSubscriber extends Subscriber {
+    constructor(destination, predicate) {
+        super(destination);
+        this.predicate = predicate;
+        this.index = 0;
+    }
+    _next(value) {
+        const destination = this.destination;
+        let result;
+        try {
+            result = this.predicate(value, this.index++);
+        }
+        catch (err) {
+            destination.error(err);
+            return;
+        }
+        this.nextOrComplete(value, result);
+    }
+    nextOrComplete(value, predicateResult) {
+        const destination = this.destination;
+        if (Boolean(predicateResult)) {
+            destination.next(value);
+        }
+        else {
+            destination.complete();
+        }
+    }
+}
+//# sourceMappingURL=takeWhile.js.map
